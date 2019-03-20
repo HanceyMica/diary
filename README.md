@@ -1,967 +1,750 @@
-```
-- 关于Lua脚本 - 
-
-脚本控制，脚本文件（*。Anm，* .Obj，*。Scn，* .Cam），
-脚本可用于文本脚本控制字符
-您可以使用Lua语言。此外，一些变量和功能已经扩展。
-
-
- - 变量 - 
-
-    目标对象的信息放在以下变量中。
-
-    obj.ox：参考坐标的相对坐标X.
-    obj.oy：Y相对于参考坐标
-    obj.oz：参考坐标的相对坐标Z.
-    obj.rx：X轴旋转角度（360.0处旋转一次）
-    obj.ry：Y轴旋转角度（一次旋转360.0）
-    obj.rz：Z轴旋转角度（360.0旋转一圈）
-    obj.cx：中心的相对坐标X.
-    obj.cy：中心的相对坐标Y.
-    obj.cz：中心的相对坐标Z.
-    obj.zoom：放大率（1.0 =相等放大率）
-    obj.alpha：不透明度（0.0到1.0 / 0.0 =透明度/ 1.0 =不透明）
-    obj.aspect：宽高比（-1.0到1.0 /加/横向减少/减去垂直减少）
-    obj.x：显示参考坐标X（ReadOnly）
-    obj.y：显示参考坐标Y（ReadOnly）
-    obj.z：显示参考坐标Z（ReadOnly）
-    obj.w：图像大小W（ReadOnly）
-    obj.h：图像大小H（ReadOnly）
-    obj.screen_w：屏幕尺寸W（ReadOnly）
-    obj.screen_h：屏幕尺寸H（ReadOnly）
-    obj.framerate：帧率（ReadOnly）
-    obj.frame：基于对象的当前帧号（ReadOnly）
-    obj.time：基于对象的当前时间（秒）（ReadOnly）
-    obj.totalframe：对象的总帧数（ReadOnly）
-    obj.totaltime：对象的总时间（秒）（ReadOnly）
-    obj.layer：放置对象的层（ReadOnly）
-    obj.index：多个对象的数量（ReadOnly）※对于单个对象
-    obj.num：多个对象的数量（1 =单个对象/ 0 =未定义）（ReadOnly）*对于单个对象
-    obj.track0：跟踪栏0值（ReadOnly）*仅在脚本文件中可用
-    obj.track1：跟踪栏1值（ReadOnly）*仅在脚本文件中可用
-    obj.track2：跟踪栏2值（ReadOnly）*仅在脚本文件中可用
-    obj.track3：跟踪栏3值（ReadOnly）*仅在脚本文件中可用
-    obj.check0：复选框值（ReadOnly）*仅在脚本文件中可用
-
-
-    - 注意事项 - 
-
-    ○请使用obj.time而不是obj.frame来支持运动模糊。
-    ○由于像素系统的功能对整个物体进行点处理，因此不适合实际使用。
-    ○转义SJIS 2字节字符0x5c后执行脚本。
-    ○脚本控制，文本对象中脚本的Unicode字符转换为Unicode标记（＆＃????;）。
-    ○可以处理的脚本的最大大小约为32 KB。如果不止于此，请使用dofile（）等。
-    ○如果从脚本调用脚本可能效果不佳。
-
-
-    - 功能 - 
-
-    添加了以下功能。
-
-    ○obj.mes（文字）
-    在文本对象中添加指定的文本。
-    它只能在文本对象的文本中使用。
-    ※你可以省略obj。并且只使用mes（）。
-    text：指定要显示的文本。
-    示例：obj.mes（“插入并显示此字符”）
-
-    ○obj.effect（[name，param1，value1，param2，value2，...]）
-    执行指定的过滤效果。只能使用媒体对象。
-    在不带参数的情况下调用时，执行脚本后的过滤器效果。
-    name：指定效果的名称。
-    param1：指定效果参数的名称。
-    value1：指定效果参数的值。
-    您可以根据需要指定param？和value？的多个组合。
-    ※param，轨道栏以外的设置值，复选框
-    它是通过导出目​​标文件等输出的名称和值。
-    ※请参阅输出中的名称，如名称更改的轨迹栏的导出。
-    *在位移图的形状规格中将“type”设置为0，将“name”设置为“* tempbuffer”
-    如果指定，则将tempbuffer读取为形状。
-    示例：obj.effect（“色调校正”，“亮度”，150，“色调”，180）
-
-    ○obj.draw（[ox，oy，zoom，alpha，rx，ry，rz]）
-    绘制当前对象。只能使用媒体对象。
-    通常在没有做任何事情的情况下最后绘制，但是使用obj.draw（）
-    您可以多次绘制对象。
-    ※如果使用obj.draw（），则不会执行脚本后的过滤效果。
-    ※您可以通过调用没有参数的obj.effect（）来预先在脚本之后执行过滤效果。
-    ox：相对坐标X.
-    oy：相对坐标Y.
-    oz：相对坐标Z.
-    zoom：放大倍率（1.0 =相等放大倍率）
-    alpha：不透明度（0.0 =透明度/ 1.0 =不透明度）
-    rx：X轴旋转角度（360.0处旋转一次）
-    ry：Y轴旋转角度（360.0旋转一圈）
-    rz：Z轴旋转角度（360.0旋转一圈）
-    示例：obj.draw（2,10,0）
-
-    ○obj.drawpoly（x0，y0，z0，x1，x1，y1，z1，x2，y2，z2，x3，y3，z3 [，u0，v0，u1，v1，u2，v2，u3，v3，alpha]）
-    使用任意矩形绘制当前对象的任何部分。只能使用媒体对象。
-    ※除内角为180度以下的所有平面外，未正确绘制。
-    ※顶点0到3顺时针转动的表面是表面。
-    ※如果使用obj.drawpoly（），则不会执行脚本后的过滤效果。
-    x0，y0，z0：正方形的顶点0的坐标
-    x1，y1，z1：正方形的顶点1的坐标
-    x2，y2，z2：正方形的顶点2的坐标
-    x3，y3，z3：正方形的顶点3的坐标
-    u0，v0：与顶点0对应的对象图像的坐标
-    u1，v1：与顶点1对应的对象图像的坐标
-    u2，v2：与顶点2对应的对象图像的坐标
-    u3，v3：与顶点3对应的对象图像的坐标
-    示例：obj.drawpoly（-50，-50,0,50，-50,0,50,50,50，-50,50,0,0,0，obj.w，0，obj.w，obj。 h，0，obj.h）
-
-    ○obj.load（[type]，...）
-    加载当前对象的图像。
-    如果省略type，将自动确定。
-    ※已经读取的图像将被丢弃。
-
-    动画电影文件
-    obj.load（“movie”，file [，time，flag]）
-    从视频文件加载指定时间的图像。
-    file：电影文件名
-    time：要显示的图像的时间（秒）（默认为对象的当前时间）
-    flag：0 =没有alpha / 1 = alpha
-    返回值：视频总时间（秒）
-    示例：obj.load（“movie”，“c：\\ test.avi”）
-    ◇图像文件
-    obj.load（“image”，file）
-    加载图像文件。
-    file：图像文件名
-    示例：obj.load（“image”，“c：\\ test.bmp”）
-    ◇文字
-    obj.load（“text”，text [，speed，time]）
-    阅读文字
-    您可以使用颜色，大小和字体控制字符。
-    您可以通过设置速度和时间来更改显示的字符数。
-    ※不能用于文本对象。
-    text：要阅读的文字
-    speed：time参数的一秒钟内显示的字符数
-    time：速度参数的经过时间
-    示例：obj.load（“text”，“此字符将作为图像加载”）
-    ◇图
-    加载形状。
-    obj.load（“figure”，name [，color，size，line]）
-    名称：形状名称
-    颜色：颜色（0x000000到0xffffff）
-    尺寸：形状大小
-    line：线宽的形状
-    示例：obj.load（“figure”，“circle”，0xffffff，100）
-    フレーム帧缓冲区
-    从帧缓冲区读取。
-    load（“framebuffer”[，x，y，w，h]）
-    x，y，w，h：从帧缓冲区获取的范围（默认为全部）
-    仮想虚拟缓冲区
-    从虚拟缓冲区读取。
-    ※可以使用obj.copybuffer（）和obj.setoption（）创建虚拟缓冲区。
-    load（“tempbuffer”[，x，y，w，h]）
-    x，y，w，h：从虚拟缓冲区获取的范围（默认为全部）
-    オブジェクト图层上的对象
-    在指定图层上加载对象。
-    obj.load（“layer”，no [，effect]）
-    no：图层编号（1到）
-    效果：执行附加效果（true = enable / false <default> = not）
-    直前上一个对象
-    加载上一个对象。
-    obj.load（“之前”）;
-    它只能在加载自定义对象中的其他对象之前使用。
-
-    ○obj.setfont（name，size [，type，col1，col2]）
-    指定obj.load（）文本中使用的字体。
-    ※您需要指定脚本的每次调用。
-    名称：字体名称
-    大小：字体大小
-    类型：字符装饰（0到4）
-    0 =正常字符/ 1 =阴影字符/ 2 =阴影字符（薄）
-    3 =边框字母/ 4 =边框字母（薄）
-    col1：字符颜色（0x000000到0xffffff）
-    col2：阴影和边缘的颜色（0x000000-0xffffff）
-
-    ○obj.rand（st_num，ed_num [，seed，frame]）
-    生成随机数。与普通随机数不同，在同一时间范围内
-    生成随机数，以便始终显示相同的值。
-    ※你可以省略obj。并且只使用rand（）。
-    st_num：随机数的最小值
-    ed_num：随机数的最大值
-    种子：随机数种子（默认是每个对象的不同随机数）
-    指定正值会导致每个对象的随机数不同，即使物种相同
-    如果物种相同，则负值会导致所有对象具有相同的随机性）
-    frame：帧号（默认为当前帧）
-    示例：obj.rand（10,20）
-
-○obj.setoption（名称，值）
-为当前对象设置各种选项。
-※您需要指定脚本的每次调用。
-name：选项名称
-值：选项值
-
-◇不要显示背面
-obj.setoption（“剔除”，值）
-值：0 =显示/ 1 =隐藏
-
-向く指向相机的方向
-obj.setoption（“billboard”，value）
-值：0 =不进行/ 1 =仅在水平方向/ 2 =仅在垂直方向/ 3 =对向
-
-対象阴影的对象
-obj.setoption（“shadow”，value）
-值：0 =不适用/ 1 =适用
-
-◇抗锯齿
-obj.setoption（“antialias”，value）
-值：0 =不/ 1 =做
-
-合成复合模式
-obj.setoption（“blend”，value [，option]）
-值：0 =正常/ 1 =加法/ 2 =减法/ 3 =乘法/ 4 =屏幕
-5 =叠加/ 6 =比较（亮）/ 7 =比较（暗）/ 8 =亮度/ 9 =色差
-以下是专用于虚拟缓冲区的合成模式。
-“alpha_add”=颜色信息是加权平均值，并添加了alpha值
-“alpha_max”=颜色信息是加权平均值，alpha值更大
-“alpha_sub”=从alpha值中减去颜色信息，而不做任何事情
-“alpha_add2”=叠加颜色信息并添加alpha值
-选项：“强制”=强制规范模式
-仅当原始合成模式正常时才反映用于绘制到帧缓冲区的合成模式。
-指定“强制”选项以反映原件不正常的情况。
-
-将绘图目标更改为虚拟缓冲区
-obj.setoption（“drawtarget”，“tempbuffer”[，w，h]）
-w，h：虚拟缓冲区的大小（默认不初始化）
-如果绘图目标是虚拟缓冲区，则使用obj.draw（）和obj.drawpoly（）进行绘制
-它是为虚拟缓冲区完成的。在这种情况下，对象具有
-不反映坐标等设置，并按原样绘制参数的坐标。
-指定大小会以透明颜色初始化虚拟缓冲区。
-虚拟缓冲区由所有对象共享。
-
-◇将绘图目标更改为帧缓冲区
-obj.setoption（“drawtarget”，“framebuffer”）
-将obj.draw（）和obj.drawpoly（）的绘图目标设置为帧缓冲区。
-不通过draw（）等对帧缓冲区进行绘制时
-完成脚本后自动完成而不用setoption（）更改它
-它将绘制到帧缓冲区。
-
-変更改脚本中帧缓冲区中绘图的状态
-obj.setoption（“draw_state”，flag）
-flag：true = draw / false =未绘制
-
-フォーカス物体对焦框模式
-obj.setoption（“focus_mode”，value）
-value：“fixed_size”=设置固定大小的帧
-
-◇设置摄像机参数
-设置各种摄像机参数。
-相机处于编辑模式时不会反映出来。
-※只能使用相机效果，脚本（相机控制）
-obj.setoption（“camera_param”，cam）
-cam：相机参数（表格）
-.x：相机坐标X.
-.y：相机坐标Y.
-.z：相机坐标Z.
-.tx：摄像机的目标坐标X.
-.ty：摄像机的目标坐标Y.
-.tz：相机的目标坐标Z.
-.rz：相机倾斜
-.ux：摄像机的向上方向单位矢量X.
-.uy：摄像机的向上方向单位矢量Y.
-.uz：摄像机的上方向单位矢量Z.
-.d：相机到屏幕的距离（焦距）
-示例：cam = obj.getoption（“camera_param”）;
-
-○obj.getoption（名称，...）
-获取当前对象的各种选项。
-name：选项名称
-
-移动轨迹栏的移动模式
-obj.getoption（“track_mode”，value）
-值：跟踪条形码
-返回值：0 =无/ 1 =直线/ 2 =曲线/ 3 =瞬时/ 4 =中点
-5 =移动量/ 6 =随机/ 7 =加速/减速/ 8 =重复
-数对象的段数
-obj.getoption（“section_num”）
-返回值：间隔数（中点数+ 1）
-
-◇获取脚本名称
-obj.getoption（“script_name”[，value] [，skip]）
-value：滤镜效果的顶部和底部的相对位置（0表示我/减号/向上/加号表示底部）
-skip：跳过禁用的滤镜效果（true =启用/ false <默认> =不）
-返回值：脚本名称（如果目标不是脚本，则为空）
-示例：如果obj.getoption（“script_name”）== obj.getoption（“script_name”， -  1）则
-※您无法获取默认包含的脚本名称
-
-调べる检查GUI的显示状态
-obj.getoption（“gui”）
-返回值：true =显示/ false =隐藏
-※视频输出期间将被隐藏。
-
-◇获取摄像机控制状态
-obj.getoption（“camera_mode”）
-返回值：0 =不受摄像机控制/ 0以外=由摄像机控制
-
-◇获取摄像头参数
-obj.getoption（“camera_param”）
-返回值：摄像机参数（表格）
-※表格的内容与obj.setoption（“camera_param”）相同。
-示例：cam = obj.getoption（“camera_param”）;
-
-调べる检查各个对象是否有效
-obj.getoption（“multi_object”）
-返回值：true =有效/ false =无效
-
-○obj.getvalue（目标[，时间，部分]）
-获取当前对象的设置。
-target：设置类型
-0 =轨迹栏0的值
-1 =轨迹栏1的值
-2 =轨迹栏2的值
-3 =轨迹栏3的值
-“x”=参考坐标X.
-“y”=参考坐标Y.
-“z”=参考坐标Z.
-“rx”=参考X轴旋转角度
-“ry”=标准Y轴旋转角度
-“rz”=参考Z轴旋转角度
-“缩放”=标准放大率（100 =相等放大率）※请注意，这与obj.zoom（1.0 =等倍）不同
-“alpha”=标准不透明度（0.0到1.0 / 0.0 =透明/ 1.0 =不透明）
-“aspect”=标准纵横比（-1.0到1.0 /加=水平减少/负垂直减少）
-“时间”=基于对象的时间
-“layer7.x”=第7层对象的参考坐标X.
-※您可以在图层[图层编号]中获取另一图层的对象的值。[设置类型]
-“scenechange”=场景变化时的显示比例（0.0到1.0）只有场景变化可用
-※请参考场景变更脚本的例子
-time：获取时间点值的时间（秒）（默认为当前时间）
-section：作为时间参考的节号（默认为起点）
-0 =起点/ 1 =第一中点/ 2 =第二中点/ -1 =终点
-※不反映目标对象的时间控制。
-
-○obj.setanchor（name，num [，option，..]）
-显示锚点。
-调用此功能时显示定位点的设置
-当锚移动时反映变量。
-每次通话最多可调用此功能8次。
-如果更改了呼叫顺序或号码，则可能无法正确反映。
-name：指定存储--dialog中指定的坐标的变量名称。 ※指定变量名称作为字符串
-指定“track”时，将引用从--track0指定的轨迹栏的起点和终点中点的值。
-※如果直接指定表变量名，则只显示没有锚显示或移动的行。
-num：指定锚点数。您可以为所有锚点指定最多16个。
-如果name =“track”，请指定0。锚点的数量是起点和终点中点的数量。
-选项：可以列出各种选项。
-“line”=用一条线连接锚点。
-“loop”=用一条线连接锚点。
-“star”=分别将锚点与对象的中心连接。
-“arm”=将锚点连接到对象的中心。
-“color”=更改上述选项的线条颜色。为后续参数指定颜色（0x000000到0xffffff）。
-“inout”=显示上述选项行显示为IN和OUT侧。 （锚的数量将是一半）
-“xyz”=用3D坐标控制锚点。 ※默认为2D坐标
-※使用相机控制+阴影时，预览中的阴影可能会略微偏移。
-返回值：获取的锚点数
-示例：obj.setanchor（“pos”，3）
-n = obj.setanchor（“track”，0，“line”）
-
-○obj.getaudio（buf，文件，类型，大小）
-从音频文件中获取音频数据。
-获取相对于对象时间的位置数据。
-buf：指定表以接收数据。
-※如果指定nil，则表格将返回第3个返回值。
-file：音频文件名（如果指定了“audiobuffer”，则可以获取正在编辑的音频数据）
-type：采集数据的类型
-“pcm”= PCM采样数据（16位单声道）
-“频谱”=每个频率的音量数据
-“傅立叶”=通过语音的离散傅立叶变换获得的数据（不需要指定大小）
-※从1/2048到原始频率的1/2变成1/2048步的1024个数据（可能...
-size：要获取的数据数量（可能小于指定值）
-返回值：采集数据的数量，采样率
-示例：n = obj.getaudio（buf，“audiobuffer”，“spectrum”，32）
-n，rate = obj.getaudio（buf，“c：\\ test.wav”，“pcm”，1000）
-n，rate，buf = obj.getaudio（nil，“c：\\ test.wav”，“pcm”，1000）
-
-○obj.filter（name [，param1，value1，param2，value2，...]）
-在指定的屏幕上执行过滤器（过滤器对象）。
-只能使用高级编辑插件添加的过滤器。
-参数说明方法与obj.effect（）相同。
-根据过滤器的不同，可能无法正确使用。
-※可能会破坏对象的图像数据。
-示例：obj.filter（“色调校正”，“亮度”，150，“色调”，180）
-
-○obj.copybuffer（dst，src）
-复制图像缓冲区
-*复制目标图像缓冲区的大小更改为复制源的大小。
-dst：复制目标缓冲区
-“tmp”=虚拟缓冲区
-“obj”=对象
-“cache：xxxx”=缓存缓冲区（xxxx是任何名称）
-src：复制源缓冲区
-“frm”=帧缓冲区
-“obj”=对象
-“tmp”=虚拟缓冲区
-“cache：xxxx”=缓存缓冲区（xxxx是任何名称）
-“image：xxxx”=图像文件（xxxx是相对于脚本文件夹的图像文件名）
-返回值：true =成功/错误=失败
-※可以使用dst和src的组合。
-“obj”<=“tmp”
-“obj”<=“frm”
-“obj”<=“cache：xxxx”
-“obj”<=“image：xxxx”
-“tmp”<=“obj”
-“tmp”<=“frm”
-“tmp”<=“cache：xxxx”
-“tmp”<=“image：xxxx”
-“cache：xxxx”<=“obj”
-“cache：xxxx”<=“tmp”
-缓存缓冲区名称对所有对象都是通用的。
-因为缓存缓冲区和虚拟缓冲区是从图像数据缓存中保护的
-如果从高速缓存号中读取其他图像等，则可以丢弃它们。
-※在小图像等的情况下，区域的总和成为最大图像尺寸的一个缓存。
-※如果使用缓存，则完成脚本的每次调用都会更安全。
-
-○obj.getpixel（x，y [，type]）
-获取当前对象的像素信息。
-在不带参数的情况下调用时，可以获取对象的像素数。
-※像素数可能与obj.w和obj.h不同。 （有很多事情很难理解......）
-x，y：要获得的像素的坐标
-type：像素信息的类型（“col”，“rgb”，“yc”）
-*省略时，obj.pixeloption（“type”）指定的类型（通常为“col”）
-返回值：如果类型为“col”
-颜色信息（0x000000至0xffffff）和不透明度（0.0 =透明/ 1.0 =不透明）
-col，a = obj.getpixel（0,0，“col”）
-如果类型是“rgb”
-每8位（0到255）的RGBA信息
-r，g，b，a = obj.getpixel（0,0，“rgb”）
-如果类型是“yc”
-YCbCr内部格式
-y，cb，cr，a = obj.getpixel（0,0，“yc”）
-没有争论
-水平和垂直像素数
-w，h = obj.getpixel（）
-
-○obj.putpixel（x，y，...）
-重写当前对象的像素信息。
-在不带参数的情况下调用时，可以获取对象的像素数。
-要传递的像素信息的类型将是obj.pixeloption（“type”）指定的类型。
-x，y：要重写的像素的坐标
-颜色信息：当类型为“col”时
-颜色信息（0x000000至0xffffff）和不透明度（0.0 =透明/ 1.0 =不透明）
-obj.putpixel（0,0，col，a）
-如果类型是“rgb”
-每8位（0到255）的RGBA信息
-obj.putpixel（0,0，r，g，b，a）
-如果类型是“yc”
-YCbCr内部格式
-obj.putpixel（0,0，y，cb，cr，a）
-
-○obj.copypixel（dst_x，dst_y，src_x，src_y）
-复制当前对象的像素信息。
-dst_x，dst_y：复制目标的坐标
-src_x，src_y：复制源的坐标
-
-○obj.pixeloption（名称，值）
-设置obj.getpixel（），obj.putpixel（），obj.copypixel（）的处理选项。
-※您需要指定脚本的每次调用。
-name：选项名称
-值：选项值
-
-指定指定像素信息类型
-obj.pixeloption（“type”，value）
-值：“col”/“rgb”/“yc”
-
-◇指定像素信息的读出目的地
-obj.pixeloption（“get”，value）
-值：“obj”= object /“frm”=帧缓冲区（无alpha值）
-
-指定指定像素信息的目的地
-obj.pixeloption（“put”，value）
-值：“obj”= object /“frm”=帧缓冲区（无alpha值）
-
-指定在写入时指定混合类型
-obj.pixeloption（“blend”，value）
-value：无参数= Replace / 0 = Normal / 1 = Add / 2 = Subtract / 3 = Multiplication / 4 = Screen
-5 =叠加/ 6 =比较（亮）/ 7 =比较（暗）/ 8 =亮度/ 9 =色差
-
-○obj.getpixeldata（[option，...]）
-读出当前对象的图像数据。
-此功能用于使用DLL进行图像处理。
-图像数据以当前对象图像的分辨率以RGBA（32位）格式存储。
-通过使用draw（）和effect（）等绘图处理函数可以获得图像数据的内容
-它将被破坏，因此请将其复制到另一个区域并在必要时进行处理。
-选项：可以列出各种选项。
-“work”=获取指向与图像大小相同的工作缓冲区的指针。
-“alloc”=分配内存（完整用户数据）并存储它
-返回值：数据指针（用户数据），水平和垂直像素数
-示例：data，w，h = obj.getpixeldata（）
-work = obj.getpixeldata（“work”）
-
-○obj.putpixeldata（数据）
-将图像数据写入当前对象。
-此功能用于使用DLL进行图像处理。
-可以使用getpixeldata（）获取的相同图像数据格式
-写入当前对象。图像数据的分辨率是
-它必须与对象相同。
-data：指向图像数据的指针（用户数据）
-示例：obj.putpixeldata（data）
-
-○obj.getpoint（target [，option]）
-获取跟踪栏值。
-
-target：integer =每个部分中的跟踪栏值
-0 =起点/ 1 =第一中间点/ 2 = 2秒中间点/ ......
-您可以使用选项指定要获取的相关轨道的相对位置。
-“index”=获取当前部分的位置。
-如果它在起始点和第一个中点之间，则由一个小数字表示，例如0.5。
-“num”=获取起点和终点航点的总数。
-“time”=获取当前时间。
-您可以使用选项指定获取时间的间隔。
-“acceleration”=获取是否设置了加速度。
-返回值：true =有效/ false =无效
-“减速”=获取是否设定减速度。
-返回值：true =有效/ false =无效
-“param”=获取跟踪栏设置。
-“link”=获取索引和相关曲目的总数。
-index，num = obj.getpoint（“link”）
-相关轨迹用于通过坐标等获取另一轨道的值。
-X坐标返回值：0,3 / Y坐标返回值：1,3 / Z坐标返回值：2,3
-
-○obj.getinfo（name，...）
-获取各种环境信息。
-name：要获取的信息的名称
-
-取获获取脚本文件夹路径
-obj.getinfo（“script_path”）
-返回值：脚本文件夹路径
-
-调べる检查视频是否正在输出
-obj.getinfo（“保存”）
-返回值：true =输出/ false =不输出
-
-取得获取最大图像尺寸
-max_x，max_y = obj.getinfo（“image_max”）
-返回值：最大图像尺寸（水平宽度，高度）
-
-○obj。插值（时间，x0，y0，z0，x1，y1，z1，x2，y2，z2，x3，y3，z3）
-从连续点p0（x0，y0，z0），p1（x1，y1，z1），p2（x2，y2，z2），p3（x3，y3，z3）
-根据时间（0到1）计算p1和p2之间的坐标。
-※y，z坐标可以省略。
-示例：x，y，z = obj。插值（时间，x0，y0，z0，x1，x1，y1，x1，y2，x2，z2，x3，y3，z3）
-x，y = obj。插值（时间，x0，y0，x1，y1，x2，y2，x3，y3）
-
-○RGB（r，g，b）
-颜色信息（0x000000至0xffffff）和红色（0至255），绿色（0至255）和蓝色（0至255）元素相互转换。
-当指定两个r，g和b时，颜色根据物体的时间流逝而改变。
-示例：col = RGB（r，g，b）
-r，g，b = RGB（col）
-col = RGB（r1，g1，b1，r2，g2，b2）
-
-○HSV（h，s，v）
-颜色信息（0x000000至0xffffff）和色调（0至360），饱和度（0至100）和亮度（0至100）相互转换。
-当指定两个h，s和v时，颜色根据对象的时间流逝而变化。
-示例：col = HSV（h，s，v）
-h，s，v = HSV（col）
-col = HSV（h1，s1，v1，h2，s2，v2）
-
-○OR（a，b）/ AND（a，b）/ XOR（a，b）
-执行OR，AND，XOR的位操作。
-示例：c = OR（a，b）
-
-○SHIFT（a，班次）
-执行算术移位。如果shift是正数，则它是左移，如果是负，则是右移。
-示例：b = SHIFT（a，1）
-
-○debug_print（文本）
-将指定的字符发送到OutputDebugString（）。用于调试。
-※脚本执行错误消息自动设置为OutputDebugString（）
-它应该被发送。
-text：调试显示字符
-示例：debug_print（“debug display”）
-
-
- - 使用示例 - 
-
-○在文本中使用脚本的示例
-以下文本显示对象时间计数器：
-
-当前对象时间= <？Mes（string.format（“％02d：％02d。％02d”，obj.time / 60，obj.time％60，（obj.time * 100）％100））？>
-
-○随时间改变对象的坐标和角度的示例
-以下脚本随着时间的推移向右旋转。
-
-obj.ox = obj.ox + obj.time * 10
-obj.rz = obj.rz + obj.time * 360
-
-○将滤镜效果应用于对象的示例
-使用以下脚本随时间变暗和变暗。
-
-i = math.cos（obj.time * math.pi * 2）* 50
-obj.effect（“色调校正”，“亮度”，100 + i）
-
-○绘制多个对象的示例
-以下脚本在一个圆圈中绘制10个对象。
-
-		n = 10
-		l = obj.w*2
-		for i=0,n do
-		  r = 360*i/n
-		  x = math.sin(r*math.pi/180)*l
-		  y = -math.cos(r*math.pi/180)*l
-		  obj.draw(x,y,0,1,1,0,0,r)
-		end
-
-○在脚本文件中使用跟踪栏和复选框值的示例
-' -  Track0：脚本文件开头的名称，最小值，最大值，默认值，移动单位'（* .anm，*。Obj，*。Scn，* .Cam）
-指定时，轨道栏将启用，如下所示。移动单元可以缩写为“1”，“0.1”或“0.01”。
-最多可使用4个轨道条。 ※现场更换最多两个。
-指定“--check0：Name，默认值（0或1）”将启用该复选框。
-
---track0：X速度，-10,10,0
---track1：Y速度，-10,10,0,1
---check0：gravity，0
-obj.ox = obj.ox + obj.track0 * obj.time
-obj.oy = obj.oy + obj.track1 * obj.time
-if（obj.check0）然后
-obj.oy = obj.oy + obj.time * obj.time
-结束
-
-○在脚本文件中使用参数设置的示例
-如果在脚本文件的开头指定“--param：default setting”（* .anm，* .obj，* .scn，* .cam）
-参数设置项生效。最多255个字节。
-※您不能在--color， -  file或--dialog的同时指定此选项。
-
---param：dx = 10; dy = 20;
-obj.ox = obj.ox + dx * obj.time
-obj.oy = obj.oy + dy * obj.time
-
-○在脚本文件中使用颜色选择对话框的示例
-如果在脚本文件的开头指定' -  color：default setting'（* .anm，* .obj，* .scn，* .cam）
-颜色选择对话框中的项目变为有效。
-指定的颜色存储在变量（颜色）中
-※您不能在--color， -  file或--dialog的同时指定此选项。
-
---color：0xffffff
-obj.load（“图”，“矩形”，颜色，100）
-
-○在脚本文件中使用文件选择对话框的示例
-如果在脚本文件的开头指定'--file：'（* .anm，* .obj，* .scn，* .cam）
-文件选择对话框中的项目有效。
-指定的文件存储在变量（文件）中
-※您不能在--color， -  file或--dialog的同时指定此选项。
-
---file：
-obj.load（文件）
-
-○在脚本文件中使用值输入对话框的示例
-如果在脚本文件的开头指定'--dialog：display name，variable name = initial value;'（* .anm，* .obj，* .scn，* .cam）
-值输入对话框中的项目有效。最多可指定16个项目。
-如果显示名称以'/ chk'，'/ col'或'/ fig'结尾，则会添加一个复选框或颜色或形状选择按钮。
-每个复选框和选择按钮最多可以指定4个项目。
-※您不能在--color， -  file或--dialog的同时指定此选项。
-
---dialog：X offset，x = 100; Y offset，y = 100;
-obj.ox = obj.ox + x
-obj.oy = obj.oy + y
-
---dialog：size，size = 100; color / col，col = 0xffffff; shape / fig，fig =“square”
-obj.load（“图”，图，col，大小）
-
-○在一个文件中注册多个动画效果和自定义对象的示例
-使用'@'启动脚本文件的文件名（* .anm，*。Obj，*。Scn，*。Cam）
-如果在每个脚本的开头定义“@name”，如下所示
-您可以一起定义多个脚本。
-※exedit.anm，exedit.obj脚本也是这种格式。
-
-ファイル注册多个文件时的文件内容[@multiple registration example.Anm]
-@样本1
---track0：速度，-10,10,10
-obj.ox = obj.ox + obj.track0 * obj.time
-@样本2
---track0：速度，-10,10,10
-obj.oy = obj.oy + obj.track0 * obj.time
-
-内容单注册的文件内容[单注册示例.Anm]
---track0：速度，-10,10,10
-obj.ox = obj.ox + obj.track0 * obj.time
-
-○场景变更脚本的示例
-随着时间的推移交叉淡入淡出以下脚本。
-在场景更改脚本中将场景更改为帧缓冲区后的图像
-对象包含场景更改前的图像以及显示的图像
-使用obj.getvalue（“scenechange”）获取百分比并处理它。
-* 0表示对象，1表示帧缓冲区。
-
-a = 1-obj.getvalue（“scenechange”）
-obj.draw（0,0,0,1，a）
-
-○显示定位点和获取坐标的示例
-使用以下脚本显示锚点并获取坐标。
-
-场合使用对话框变量时
---dialog：coordinates，pos = {}
-num = 3
-obj.setanchor（“pos”，num，“loop”）;
-对于i = 0，num-1做
-x = pos [i * 2 + 1]
-y = pos [i * 2 + 2]
-结束
-※在3D坐标的情况下，输入3个XYZ坐标的数组。
-※您也可以输入pos = {}的初始值。
-
-场合使用轨迹栏时
---track0：X，-1000,1000,0
---track1：Y，-1000,1000,0
---track2：Z，-1000,1000,0
-num = obj.setanchor（“track”，0，“xyz”，“line”）;
-对于i = 0，num-1做
-x = obj.getvalue（0,0，i）
-y = obj.getvalue（1,0，i）
-z = obj.getvalue（2,0，i）
-结束
-
-场合多次使用obj.setanchor（）时
---dialog：坐标1，pos1 = {};坐标2，pos2 = {}
-obj.setanchor（“pos1”，4，“loop”，“color”，RGB（0,255,255））;
-obj.setanchor（“pos2”，2，“line”，“color”，RGB（0,255,0））;
-※您不能使用同一对话框的多个变量。
-
-○轨迹栏更改方法脚本示例
-以下脚本以相同的速度将轨迹栏值从起点更改为终点。
-您不能在轨迹栏更改方法脚本中使用与普通对象相关的变量或函数。
-在脚本文件（* .tra）的开头指定'--twopoint'是一种忽略中间点的更改方法。
-指定' -  param：Initial value（Integer）'可启用跟踪栏设置。
-指定' -  speed：acceleration initial value（0/1），减速初始值（0/1）'可启用加速/减速设置。
-
-index，ratio = math.modf（obj.getpoint（“index”））
-st = obj.getpoint（index）;
-ed = obj.getpoint（index + 1）;
-return st +（ed-st）* ratio;
-
-
- - 历史 - 
-
-[2011/2/28] ver 0.87 f
-修复了在处理失去obj.effect（）中的图像时未正确反映的问题。
-修复了obj.load（）无法读取文件名中包含全角字符的图像文件。
-修复了无法使用obj.load（）加载影片文件时显示的警告对话框。
-添加obj.load（）的文本加载不能在文本对象中使用的描述。
-添加了在脚本之后执行过滤效果的函数到obj.effect（）。
-
-[2011/3/29] ver 0.87 g
-修复了当obj.effect（）中参数（如大小）发生变化时未反映的情况。
-添加了obj.drawpoly（）和obj.setoption（）。
-为obj.setfont（）添加了颜色参数。
-添加了对话框选择功能（ -  color，-file）。
-
-[2011/3/30] ver 0.87h
-修复了obj.effect（）处理后某些参数恢复到原始值的问题。
-
-[2011/4/10] ver 0.87i
-修复了在颜色选择对话框中取消时未恢复颜色的问题。
-添加了对话框选择功能（ - 对话框）。
-添加了obj.getoption（）。
-
-[2011/4/25] ver 0.88
-修复了--dialog定义中使用的某些字符无法正常工作的问题。
-修复了obj.setoption（）的混合未反映在obj.draw（）和obj.drawpoly（）中的问题。
-轨迹栏和复选框以外的设置值也反映在obj.effect（）中。
-
-[2011/5/8] ver 0.88a
-修复了obj.effect（）中未正确反映设置值的问题。
-当绘图对象的混合模式是标准时，会反映obj.setoption（）的混合。
-可以在--dialog中输入的最大项目数已增加到12。
-
-[2011/5/30] ver 0.88b
-添加了可以使用obj.getoption（）获取的信息类型。
-添加了obj.getvalue（）。
-
-[2011/6/20] ver 0.89
-即使通过obj.getvalue（）获取标准绘图对象的Z坐标，也会返回该值。
-通过obj.getvalue（）可以获得另一个层的对象的值。
-
-[2011/7/19] ver 0.89b
-添加了obj.getaudio（）和obj.getpixel（）。
-
-[2011/8/1] ver 0.89c
-能够省略obj.getpixel（）的像素类型。
-添加了obj.putpixel（），obj.copypixel（）和obj.pixeloption（）。
- - 修正了--dialog中没有正确反映对话框值的问题。
-
-[2011/8/22] ver 0.89d
-修复了某些脚本名称无法正常工作的问题。
-修复了在obj.getaudio（）中使用“audiobuffer”时相机控制无效的问题。
-
-[2011/8/29] ver 0.89e
-使用--dialog的对话框的值
-
-[2011/9/5] ver 0.89f
- - 修正了在--dialog中更改值时可能无法正确显示设置内容的问题。
-修复了使用obj.getvalue（）无法获得正确值的问题。
-
-[2011/10/2] ver 0.89 g
-修复了根据obj.rand（）中的条件很容易获得类似值的问题。
-能够在obj.drawpoly（）中省略uv坐标。
-添加了带有alpha到obj.load（）的电影文件的参数。
-添加了与obj.load（）和obj.setoption（）的虚拟缓冲区关联。
-添加了obj.copybuffer（）。
-添加了可以使用obj.getvalue（）获取的信息类型。
- - 可以通过轨道设置值的更改单位。
-添加了场景更改脚本的说明。
-
-[2011/10/16] ver 0.89h
-参数被添加到obj.load（）的“framebuffer”和“tempbuffer”中。
-在obj.setoption中添加了虚拟缓冲区专用混合模式以“混合”。
- - 通过对话框的定义，可以设置复选框的选择以及颜色和图形。
-
-[2011/11/7] ver 0.89i
-可以在场景更改脚本中使用的轨迹栏数已更改为最多两个。
-添加了obj.filter（）。
-
-[2011/11/19] ver 0.89j
-package.path和package.cpath的初始值已更改为包含exedit.auf和脚本文件夹的文件夹。
-在obj.setoption（）中更改与虚拟缓冲区相关的参数。 ※您可以像以前一样使用它。
-添加了obj.setanchor（），RGB（），OR（），AND（），XOR（），SHIFT（）。
-使用obj.setanchor（）添加了锚点控制的描述。
-
-[2011/11/23] ver 0.89j2
-添加了obj.getinfo（），obj.getpixeldata（）和obj.putpixeldata（）。
-添加了obj.setanchor（）选项。
-
-[2011/12/5] ver 0.89k
-修复了虚拟缓冲区绘制时未反映obj.setoption（）的“antialias”设置。
-修复了obj.getpixeldata（）和obj.putpixeldata（）无法正常工作的问题。
-修复了obj.setanchor（）的返回值没有返回的问题。
-将参考旋转角度添加到obj.rx，obj.ry和obj.rz的初始角度。
-添加了obj.cx，obj.cy和obj.cz.
-
-[2011/12/26] ver 0.89 l
-修复了在时间轴上放置滤镜效果时未显示obj.setanchor（）的问题。
-添加了一种设置方法，用于更改RGB（）中对象的颜色随时间的变化。
-在obj.getoption（）中添加了“camera_param”，“camera_mode”和“gui”。
-在obj.setoption（）中添加了“camera_param”和“draw_state”。
-为obj.getinfo（）添加了“保存”。
-添加了obj.copybuffer（）的参数类型。
-添加了obj.interpolation（）和HSV（）。
-
-[2011/12/29] ver 0.89 l3
-添加了obj.getoption（）和obj.setoption（）的“camera_param”的设置。
-
-[2012/1/9] ver 0.89 m
-修复了在使用obj.getvalue（）获取音频对象时获取坐标等时被删除的问题。
-为obj.getvalue（）的目标添加了“alpha”和“aspect”。
-在obj.setanchor（）的选项中添加了“inout”和“color”。
-已启用多次调用obj.setanchor（）。
-
-[2012/1/22] ver 0.89m2
-在obj.setoption（）中添加了一个选项“blend”。
-添加了一个只显示obj.setanchor（）中的行的方法。
-在obj.getpixeldata（）中添加了“type”选项。
-
-[2012/1/29] ver 0.89n
-修复了隐藏obj.getoption（）的“gui”中目标的设置对话框有时是真的。
---dialog的第一个颜色设置（/ col）按钮也显示在对象设置对话框中。
-同时在对话框（--dialog等）中添加了--check0。
-
-[2012/3/4] ver 0.89 o
-修复了为1点对象执行obj.getpixeldata（）时被删除的问题。
-修复了obj.getpixeldata（）中宽度为奇数时灰尘可能进入的问题。
-在obj.setoption（）中添加了“focus_mode”。
-脚本读取缓冲区已增加。
-可以在--dialog中输入的最大项目数已增加到16。
-执行时不将脚本文件转换为UTF-8。
-
-[2012/3/13] ver 0.89p
-脚本控制，它是在不将文本对象转换为UTF-8的情况下执行的。
-
-[2012/3/24] ver 0.89 p2
-能够显示带有mes（）和obj.load（）的“text”的Unicode标记（十进制数）。
-脚本控制，将文本对象的Unicode字符转换为标记并处理它们。
-
-[2012/4/8] ver 0.90
-在obj.copybuffer（）的参数类型中添加了“cache”和“image”。
-
-[2012/5/27] ver 0.90b
-添加采样率以返回obj.getaudio（）的值。
-
-[2012/6/17] ver 0.90c
-将“fourier”添加到obj.getaudio（）的类型中
-
-[2012/7/17] ver 0.90c4
-为obj.getoption（）添加了“multi_object”选项。
-
-[2012/9/3] ver 0.90d3
-修复了使用相机控制+阴影时obj.setanchor（）无法正确移动的问题。
-
-[2013/1/3] ver 0.90e
-使用obj.putpixeldata（）添加了对用户数据格式的支持。
-
-[2013/1/6] ver 0.90e2
-为obj.getvalue（）的目标添加了“时间”。
-
-[2013/2/11] ver 0.90e3
-修复了在obj.copybuffer（）中处理大小为0的对象时发生的问题。
-
-[2013/3/3] ver 0.90e4
-添加了跳过obj.getoption（）的“script_name”的选项。
-添加了obj.effect（）的描述。
-在obj.load（）中添加了“layer”和“before”。
-我们可以从脚本中只调用一次脚本。
-
-[2013/3/18] ver 0.90e5
-修复了在obj.load（）的“layer”中指定音频对象时的丢弃。
-修复了obj.getoption（）中的“script_name”跳过中间点后无法正常工作的问题。
-
-[2013/4/15] ver 0.91
-在obj.getpixeldata（）中添加了“alloc”选项。
-可以使用obj.getaudio（）通过返回值获取数据表。
-添加了obj.getpoint（）。
-添加了轨迹栏更改方法脚本的说明。
-
-[2013/4/21] ver 0.91a
-在轨迹栏更改方法脚本中添加了package.path和package.cpath。
-添加了obj.rand（）来跟踪条形更改方法脚本。
-
-[2013/6/2] ver 0.91b
-修复了从脚本调用脚本并返回时更改虚拟缓冲区大小的问题。
-选项“alpha_add2”已添加到obj.setoption（）中的“blend”中。
-
-[2013/6/30] ver 0.91c
-在obj.load（）中为“text”添加了“speed”和“time”选项。
-在obj.getinfo（）中添加了“image_max”。
-
-
- - 关于Lua二元 - 
-
-将lua51.dll附加到位于Lua主站点上的5.1.4版本
-它是用5.14-2补丁构建的。
-
-Lua的主页
-http://www.lua.org/
-
-
-	Lua License
-	-----------
-
-	Lua is licensed under the terms of the MIT license reproduced below.
-	This means that Lua is free software and can be used for both academic
-	and commercial purposes at absolutely no cost.
-
-	For details and rationale, see http://www.lua.org/license.html .
-
-	===============================================================================
-
-	Copyright (C) 1994-2008 Lua.org, PUC-Rio.
-
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
-
-	The above copyright notice and this permission notice shall be included in
-	all copies or substantial portions of the Software.
-
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-	THE SOFTWARE.
-
-	===============================================================================
-
-```
+﻿## 目录
+
+* [语言无关](#语言无关)
+  * [IDE](#ide)
+  * [Web](#web)
+  * [WEB服务器](#web服务器)
+  * [其它](#其它)
+  * [函数式概念](#函数式概念)
+  * [分布式系统](#分布式系统)
+  * [在线教育](#在线教育)
+  * [大数据](#大数据)
+  * [操作系统](#操作系统)
+  * [数据库](#数据库)
+  * [智能系统](#智能系统)
+  * [正则表达式](#正则表达式)
+  * [版本控制](#版本控制)
+  * [程序员杂谈](#程序员杂谈)
+  * [管理和监控](#管理和监控)
+  * [编程艺术](#编程艺术)
+  * [编译原理](#编译原理)
+  * [编辑器](#编辑器)
+  * [计算机图形学](#计算机图形学)
+  * [设计模式](#设计模式)
+  * [软件开发方法](#软件开发方法)
+  * [项目相关](#项目相关)
+* [语言相关](#语言相关)
+  * [Android](#android)
+  * [AWK](#awk)
+  * [C](#c)
+  * [C#](#c-sharp)
+  * [C++](#c-1)
+  * [CoffeeScript](#coffeescript)
+  * [Dart](#dart)
+  * [Elasticsearch](#elasticsearch)
+  * [Elixir](#elixir)
+  * [Erlang](#erlang)
+  * [Fortran](#fortran)
+  * [Golang](#golang)
+  * [Haskell](#haskell)
+  * [HTML / CSS](#html--css)
+  * [HTTP](#http)
+  * [iOS](#ios)
+  * [Java](#java)
+  * [JavaScript](#javascript)
+    * [AngularJS](#angularjs)
+    * [Backbone.js](#backbonejs)
+    * [D3.js](#d3js)
+    * [ExtJS](#extjs)
+    * [impress.js](#impressjs)
+    * [jQuery](#jquery)
+    * [Node.js](#nodejs)
+    * [React.js](#reactjs)
+    * [Vue.js](#vuejs)
+    * [Zepto.js](#zeptojs)
+  * [LaTeX](#latex)
+  * [LISP](#lisp)
+  * [Lua](#lua)
+  * [Markdown](#markdown)
+  * [MySQL](#mysql)
+  * [NoSQL](#nosql)
+  * [Perl](#perl)
+  * [PHP](#php)
+  * [PostgreSQL](#postgresql)
+  * [Python](#python)
+    * [Django](#django)
+  * [R](#r)
+  * [reStructuredText](#restructuredtext)
+  * [Ruby](#ruby)
+  * [Rust](#rust)
+  * [Scala](#scala)
+  * [Scheme](#scheme)
+  * [Scratch](#scratch)
+  * [Shell](#shell)
+  * [Swift](#swift)
+  * [TypeScript](#typescript)
+  * [VBA](#vba-microsoft-visual-basic-applications)
+  * [Vim](#vim)
+  * [Visual Prolog](#visual-prolog)
+  * [WebAssembly](#webassembly)
+
+
+## 语言无关
+
+### IDE
+
+* [IntelliJ IDEA 简体中文专题教程](https://github.com/judasn/IntelliJ-IDEA-Tutorial)
+
+
+### Web
+
+* [3 Web Designs in 3 Weeks](https://www.gitbook.com/book/juntao/3-web-designs-in-3-weeks/details)
+* [Chrome 开发者工具中文手册](https://github.com/CN-Chrome-DevTools/CN-Chrome-DevTools)
+* [Chrome扩展及应用开发](http://www.ituring.com.cn/minibook/950)
+* [Chrome扩展开发文档](http://open.chrome.360.cn/extension_dev/overview.html)
+* [Growth: 全栈增长工程师指南](https://github.com/phodal/growth-ebook)
+* [Grunt中文文档](http://www.gruntjs.net)
+* [Gulp 入门指南](https://github.com/nimojs/gulp-book)
+* [gulp中文文档](http://www.gulpjs.com.cn/docs/)
+* [HTTP 接口设计指北](https://github.com/bolasblack/http-api-guide)
+* [HTTP/2.0 中文翻译](http://yuedu.baidu.com/ebook/478d1a62376baf1ffc4fad99?pn=1)
+* [http2讲解](https://www.gitbook.com/book/ye11ow/http2-explained/details)
+* [JSON风格指南](https://github.com/darcyliu/google-styleguide/blob/master/JSONStyleGuide.md)
+* [Wireshark用户手册](http://man.lupaworld.com/content/network/wireshark/index.html)
+* [一站式学习Wireshark](https://community.emc.com/thread/194901)
+* [关于浏览器和网络的 20 项须知](http://www.20thingsilearned.com/zh-CN/home)
+* [前端代码规范 及 最佳实践](http://coderlmn.github.io/code-standards/)
+* [前端开发体系建设日记](https://github.com/fouber/blog/issues/2)
+* [前端资源分享（一）](https://github.com/hacke2/hacke2.github.io/issues/1)
+* [前端资源分享（二）](https://github.com/hacke2/hacke2.github.io/issues/3)
+* [正则表达式30分钟入门教程](http://deerchao.net/tutorials/regex/regex.htm)
+* [浏览器开发工具的秘密](http://jinlong.github.io/2013/08/29/devtoolsecrets/)
+* [移动Web前端知识库](https://github.com/AlloyTeam/Mars)
+* [移动前端开发收藏夹](https://github.com/hoosin/mobile-web-favorites)
+
+
+### WEB服务器
+
+* [Apache 中文手册](http://works.jinbuguo.com/apache/menu22/index.html)
+* [Nginx开发从入门到精通](http://tengine.taobao.org/book/index.html) (淘宝团队出品)
+* [Nginx教程从入门到精通](http://www.ttlsa.com/nginx/nginx-stu-pdf/) (PDF版本，运维生存时间出品)
+
+
+### 其它
+
+* [OpenWrt智能、自动、透明翻墙路由器教程](https://softwaredownload.gitbooks.io/openwrt-fanqiang/content/)
+* [SAN 管理入门系列](https://community.emc.com/docs/DOC-16067)
+* [Sketch 中文手册](http://sketchcn.com/sketch-chinese-user-manual.html#introduce)
+* [深入理解并行编程](http://ifeve.com/perfbook/)
+
+
+### 函数式概念
+
+* [傻瓜函数编程](https://github.com/justinyhuang/Functional-Programming-For-The-Rest-of-Us-Cn)
+
+
+### 分布式系统
+
+* [走向分布式](http://dcaoyuan.github.io/papers/pdfs/Scalability.pdf) (PDF)
+
+
+### 在线教育
+
+* [51CTO学院](http://edu.51cto.com)
+* [Codecademy](https://www.codecademy.com/?locale_code=zh)
+* [CodeSchool](https://www.codeschool.com)
+* [Coursera](https://www.coursera.org/courses?orderby=upcoming&lngs=zh)
+* [Learn X in Y minutes](https://learnxinyminutes.com) (数十种语言快速入门教程)
+* [shiyanlou](https://www.shiyanlou.com)
+* [TeamTreeHouse](https://teamtreehouse.com)
+* [Udacity](https://www.udacity.com)
+* [xuetangX](https://www.xuetangx.com)
+* [慕课网](http://www.imooc.com/course/list) (丰富的移动端开发、php开发、web前端、html5教程以及css3视频教程等课程资源)
+* [极客学院](http://www.jikexueyuan.com)
+* [汇智网](http://www.hubwiz.com)
+* [计蒜客](http://www.jisuanke.com)
+
+
+### 大数据
+
+* [Spark 编程指南简体中文版](https://aiyanbo.gitbooks.io/spark-programming-guide-zh-cn/content/)
+* [大型集群上的快速和通用数据处理架构](https://code.csdn.net/CODE_Translation/spark_matei_phd)
+* [数据挖掘中经典的算法实现和详细的注释](https://github.com/linyiqun/DataMiningAlgorithm)
+* [面向程序员的数据挖掘指南](http://dataminingguide.books.yourtion.com)
+
+
+### 操作系统
+
+* [Debian 参考手册](http://man.chinaunix.net/linux/debian/reference/reference.zh-cn.html)
+* [Docker —— 从入门到实践](https://github.com/yeasy/docker_practice)
+* [Docker中文指南](https://github.com/widuu/chinese_docker)
+* [Docker入门实战](http://yuedu.baidu.com/ebook/d817967416fc700abb68fca1)
+* [FreeBSD 使用手册](http://www.freebsd.org/doc/zh_CN.UTF-8/books/handbook/)
+* [Linux Documentation (中文版)](https://tinylab.gitbooks.io/linux-doc/content/zh-cn/)
+* [Linux Guide for Complete Beginners](http://happypeter.github.io/LGCB/book/)
+* [Linux 构建指南](http://works.jinbuguo.com/lfs/lfs62/index.html)
+* [Linux 系统高级编程](http://sourceforge.net/projects/elpi/)
+* [Linux工具快速教程](https://github.com/me115/linuxtools_rst)
+* [Mac 开发配置手册](https://aaaaaashu.gitbooks.io/mac-dev-setup/content/)
+* [Operating Systems: Three Easy Pieces](http://pages.cs.wisc.edu/~remzi/OSTEP/)
+* [The Linux Command Line](http://billie66.github.io/TLCL/index.html) (中英文版)
+* [Ubuntu 参考手册](http://wiki.ubuntu.org.cn/UbuntuManual)
+* [uCore Lab: Operating System Course in Tsinghua University](https://www.gitbook.com/book/objectkuan/ucore-docs/details)
+* [UNIX TOOLBOX](http://cb.vu/unixtoolbox_zh_CN.xhtml)
+* [命令行的艺术](https://github.com/jlevy/the-art-of-command-line/blob/master/README-zh.md)
+* [嵌入式 Linux 知识库 (eLinux.org 中文版)](https://tinylab.gitbooks.io/elinux/content/zh/)
+* [开源世界旅行手册](http://i.linuxtoy.org/docs/guide/index.html)
+* [理解Linux进程](https://github.com/tobegit3hub/understand_linux_process)
+* [鸟哥的 Linux 私房菜 基础学习篇](http://cn.linux.vbird.org/linux_basic/linux_basic.php)
+* [鸟哥的 Linux 私房菜 服务器架设篇](http://cn.linux.vbird.org/linux_server/)
+
+
+### 数据库
+
+<!-- Waiting to add in -->
+
+
+### 智能系统
+
+* [一步步搭建物联网系统](https://github.com/phodal/designiot)
+
+
+### 正则表达式
+
+* [正则表达式-菜鸟教程](http://www.runoob.com/regexp/regexp-tutorial.html)
+* [正则表达式30分钟入门教程](https://web.archive.org/web/20161119141236/http://deerchao.net:80/tutorials/regex/regex.htm)
+
+
+### 版本控制
+
+* [Git - 简易指南](http://rogerdudler.github.io/git-guide/index.zh.html)
+* [Git-Cheat-Sheet](https://github.com/flyhigher139/Git-Cheat-Sheet) （感谢 @flyhigher139 翻译了中文版）
+* [Git Community Book 中文版](http://gitbook.liuhui998.com)
+* [git-flow 备忘清单](http://danielkummer.github.io/git-flow-cheatsheet/index.zh_CN.html)
+* [Git magic](http://www-cs-students.stanford.edu/~blynn/gitmagic/intl/zh_cn/)
+* [Git Magic](http://www-cs-students.stanford.edu/~blynn/gitmagic/intl/zh_cn/)
+* [Git 参考手册](http://gitref.justjavac.com)
+* [Github帮助文档](https://github.com/waylau/github-help)
+* [GitHub秘籍](https://snowdream86.gitbooks.io/github-cheat-sheet/content/zh/)
+* [Git教程](http://www.liaoxuefeng.com/wiki/0013739516305929606dd18361248578c67b8067c8c017b000) （作者：[@廖雪峰](http://weibo.com/liaoxuefeng)）
+* [Got GitHub](https://github.com/gotgit/gotgithub)
+* [GotGitHub](http://www.worldhello.net/gotgithub/index.html)
+* [HgInit (中文版)](https://zh-hginit.readthedocs.io/en/latest/)
+* [Mercurial 使用教程](https://www.mercurial-scm.org/wiki/ChineseTutorial)
+* [Pro Git](https://git-scm.com/book/zh/v2)
+* [Pro Git 中文版](https://www.gitbook.com/book/0532/progit/details) (整理在gitbook上)
+* [Pro Git 第二版 中文版](https://bingohuang.gitbooks.io/progit2/content) - Bingo Huang
+* [svn 手册](http://svnbook.red-bean.com/nightly/zh/index.html)
+* [学习 Git 分支](http://pcottle.github.io/learnGitBranching/) (点击右下角按钮可切换至简体及正体中文)
+* [沉浸式学 Git](http://igit.linuxtoy.org/index.html)
+* [猴子都能懂的GIT入门](http://backlogtool.com/git-guide/cn/)
+
+
+### 程序员杂谈
+
+* [程序员的自我修养](http://www.kancloud.cn/kancloud/a-programmer-prepares)
+
+
+### 管理和监控
+
+* [ElasticSearch 权威指南](https://www.gitbook.com/book/fuxiaopang/learnelasticsearch/details)
+* [Elasticsearch 权威指南（中文版）](http://es.xiaoleilu.com)
+* [ELKstack 中文指南](http://kibana.logstash.es)
+* [Logstash 最佳实践](https://github.com/chenryn/logstash-best-practice-cn)
+* [Mastering Elasticsearch(中文版)](http://udn.yyuap.com/doc/mastering-elasticsearch/)
+* [Puppet 2.7 Cookbook 中文版](https://www.gitbook.com/book/wizardforcel/puppet-27-cookbook/details)
+
+
+### 编程艺术
+
+* [取悦的工序：如何理解游戏](http://read.douban.com/ebook/4972883/) (豆瓣阅读，免费书籍)
+* [每个程序员都应该了解的内存知识(译)](http://www.oschina.net/translate/what-every-programmer-should-know-about-memory-part1?print)【第一部分】
+* [程序员编程艺术](https://github.com/julycoding/The-Art-Of-Programming-by-July)
+* [编程入门指南](http://www.kancloud.cn/kancloud/intro-to-prog/52592)
+
+
+### 编译原理
+
+* [《计算机程序的结构和解释》公开课 翻译项目](https://github.com/DeathKing/Learning-SICP)
+
+
+### 编辑器
+
+* [exvim--vim 改良成IDE项目](http://exvim.github.io/docs-zh/intro/)
+* [Vim中文文档](https://github.com/vimcn/vimcdoc)
+* [所需即所获：像 IDE 一样使用 vim](https://github.com/yangyangwithgnu/use_vim_as_ide)
+* [笨方法学Vimscript 中译本](http://learnvimscriptthehardway.onefloweroneworld.com)
+
+
+### 计算机图形学
+
+* [LearnOpenGL CN](https://learnopengl-cn.github.io)
+* [OpenGL 教程](https://github.com/zilongshanren/opengl-tutorials)
+
+
+### 设计模式
+
+* [史上最全设计模式导学目录](http://blog.csdn.net/lovelion/article/details/17517213)
+* [图说设计模式](https://github.com/me115/design_patterns)
+
+
+### 软件开发方法
+
+* [傻瓜函数编程](https://github.com/justinyhuang/Functional-Programming-For-The-Rest-of-Us-Cn) (《Functional Programming For The Rest of Us》中文版)
+* [硝烟中的 Scrum 和 XP](http://www.infoq.com/cn/minibooks/scrum-xp-from-the-trenches)
+
+
+### 项目相关
+
+* [GNU make 指南](http://docs.huihoo.com/gnu/linux/gmake.html)
+* [Gradle 2 用户指南](https://github.com/waylau/Gradle-2-User-Guide)
+* [Gradle 中文使用文档](http://yuedu.baidu.com/ebook/f23af265998fcc22bcd10da2)
+* [Joel谈软件](https://web.archive.org/web/20170616013024/http://local.joelonsoftware.com/wiki/Chinese_(Simplified))
+* [selenium 中文文档](https://github.com/fool2fish/selenium-doc)
+* [开源软件架构](http://www.ituring.com.cn/book/1143)
+* [持续集成（第二版）](http://article.yeeyan.org/view/2251/94882) (译言网)
+* [約耳談軟體(Joel on Software)](https://web.archive.org/web/20170615232349/http://local.joelonsoftware.com/wiki/首頁) (繁体中文)
+* [编码规范](https://github.com/ecomfe/spec)
+* [让开发自动化系列专栏](http://www.ibm.com/developerworks/cn/java/j-ap/)
+* [追求代码质量](http://www.ibm.com/developerworks/cn/java/j-cq/)
+
+
+## 语言相关
+
+### Android
+
+* [Android Design(中文版)](http://www.apkbus.com/design/index.html)
+* [Android Note(开发过程中积累的知识点)](https://github.com/CharonChui/AndroidNote)
+* [Android6.0新特性详解](http://leanote.com/blog/post/561658f938f41126b2000298)
+* [Android学习之路](http://stormzhang.github.io/android/2014/07/07/learn-android-from-rookie/)
+* [Android开发技术前线(android-tech-frontier)](https://github.com/bboyfeiyu/android-tech-frontier)
+* [Google Android官方培训课程中文版](http://hukai.me/android-training-course-in-chinese/index.html)
+* Google Material Design 正體中文版 ([译本一](https://wcc723.gitbooks.io/google_design_translate/content/style-icons.html) [译本二](https://github.com/1sters/material_design_zh))
+* [Material Design 中文版](http://wiki.jikexueyuan.com/project/material-design/)
+* [Point-of-Android](https://github.com/FX-Max/Point-of-Android) （Android 一些重要知识点解析整理）
+
+
+### AWK
+
+* [awk中文指南](http://awk.readthedocs.org/en/latest/index.html)
+* [awk程序设计语言](https://github.com/wuzhouhui/awk)
+
+
+### C
+
+* [C 语言常见问题集](http://c-faq-chn.sourceforge.net/ccfaq/ccfaq.html)
+* [C/C++ 学习教程](http://doc.lellansin.com)
+* [Linux C 编程一站式学习](http://docs.linuxtone.org/ebooks/C&CPP/c/)
+* [新概念 C 语言教程](https://github.com/limingth/NCCL)
+
+
+### C Sharp
+
+* [精通C#(第6版)](http://book.douban.com/subject/24827879/)
+
+
+### C++
+
+* [100个gcc小技巧](https://github.com/hellogcc/100-gcc-tips/blob/master/src/index.md)
+* [100个gdb小技巧](https://github.com/hellogcc/100-gdb-tips/blob/master/src/index.md)
+* [C 语言编程透视](https://tinylab.gitbooks.io/cbook/content/)
+* [C/C++ Primer](https://github.com/andycai/cprimer) - @andycai
+* [C++ FAQ LITE(中文版)](http://www.sunistudio.com/cppfaq/)
+* [C++ Primer 5th Answers](https://github.com/Mooophy/Cpp-Primer)
+* [C++ Template 进阶指南](https://github.com/wuye9036/CppTemplateTutorial)
+* [C++ 基础教程](http://www.prglab.com/cms/)
+* [C++ 并发编程(基于C++11)](https://chenxiaowei.gitbooks.io/cpp_concurrency_in_action/content/)
+* [C++ 并发编程指南](https://github.com/forhappy/Cplusplus-Concurrency-In-Practice)
+* [CGDB中文手册](https://github.com/leeyiw/cgdb-manual-in-chinese)
+* [Cmake 实践](https://web.archive.org/web/20170615174144/http://sewm.pku.edu.cn/src/paradise/reference/CMake%20Practice.pdf) (PDF)
+* [GNU make 指南](http://docs.huihoo.com/gnu/linux/gmake.html)
+* [Google C++ 风格指南](http://zh-google-styleguide.readthedocs.org/en/latest/google-cpp-styleguide/contents/)
+* [QT 教程](http://www.kuqin.com/qtdocument/tutorial.html)
+* [ZMQ 指南](https://github.com/anjuke/zguide-cn)
+* [像计算机科学家一样思考（C++版)](http://www.ituring.com.cn/book/1203) (《How To Think Like a Computer Scientist: C++ Version》中文版)
+* [简单易懂的C魔法](http://www.nowamagic.net/librarys/books/contents/c)
+* [跟我一起写Makefile(PDF)](http://scc.qibebt.cas.cn/docs/linux/base/%B8%FA%CE%D2%D2%BB%C6%F0%D0%B4Makefile-%B3%C2%F0%A9.pdf) (PDF)
+
+
+### CoffeeScript
+
+* [CoffeeScript 中文](http://coffee-script.org)
+* [CoffeeScript 编码风格指南](https://github.com/geekplux/coffeescript-style-guide)
+* [CoffeeScript 编程风格指南](https://github.com/elrrrrrrr/coffeescript-style-guide/blob/master/README-ZH.md)
+
+
+### Dart
+
+* [Dart 语言导览](http://dart.lidian.info/wiki/Language_Tour)
+
+
+### Elasticsearch
+
+* [Elasticsearch 权威指南](https://github.com/looly/elasticsearch-definitive-guide-cn) （《Elasticsearch the definitive guide》中文版）
+* [ELKstack 中文指南](http://kibana.logstash.es)
+* [Mastering Elasticsearch(中文版)](http://udn.yyuap.com/doc/mastering-elasticsearch/)
+
+
+### Elixir
+
+* [Elixir Getting Started 中文翻译](https://github.com/Ljzn/ElixrGettingStartedChinese)
+* [Elixir 编程语言教程](https://elixirschool.com/cn/) (Elixir School)
+* [Elixir元编程与DSL 中文翻译](https://github.com/Ljzn/MetaProgrammingInElixirChinese)
+* [Phoenix 框架中文文档](https://mydearxym.gitbooks.io/phoenix-doc-in-chinese/content/)
+
+
+### Erlang
+
+* [Erlang 并发编程](https://github.com/liancheng/cpie-cn) (《Concurrent Programming in Erlang (Part I)》中文版)
+
+
+### Fortran
+
+* [Fortran77和90/95编程入门](http://micro.ustc.edu.cn/Fortran/ZJDing/)
+
+
+### Golang
+
+* [Go Web 编程](https://github.com/astaxie/build-web-application-with-golang)
+* [Go 入门指南](https://github.com/Unknwon/the-way-to-go_ZH_CN) (《The Way to Go》中文版)
+* [Go 官方文档翻译](https://github.com/golang-china/golangdoc.translations)
+* [Go 指南](https://tour.go-zh.org/list) (《A Tour of Go》中文版)
+* [Go 简易教程](https://github.com/songleo/the-little-go-book_ZH_CN) (《 [The Little Go Book](https://github.com/karlseguin/the-little-go-book) 》中文版)
+* [Go 编程基础](https://github.com/Unknwon/go-fundamental-programming)
+* [Go 语言实战笔记](https://github.com/rujews/go-in-action-notes)
+* [Go 语言标准库](https://github.com/polaris1119/The-Golang-Standard-Library-by-Example)
+* [Go 语言高级编程（Advanced Go Programming）](https://github.com/chai2010/advanced-go-programming-book)
+* [Go命令教程](https://github.com/hyper-carrot/go_command_tutorial)
+* [Go实战开发](https://github.com/astaxie/Go-in-Action)
+* [Go语言博客实践](https://github.com/achun/Go-Blog-In-Action)
+* [Java程序员的Golang入门指南](http://blog.csdn.net/dc_726/article/details/46565241)
+* [Network programming with Go 中文翻译版本](https://github.com/astaxie/NPWG_zh)
+* [Revel 框架手册](http://gorevel.cn/docs/manual/index.html)
+* [学习Go语言](http://mikespook.com/learning-go/)
+* [神奇的 Go 语言](http://go.ctolib.com/docs/read/magical-go-c-index.html)
+
+
+### Groovy
+
+* [实战 Groovy 系列](http://www.ibm.com/developerworks/cn/java/j-pg/)
+
+
+### Haskell
+
+* [Haskell 趣学指南](http://learnyoua.haskell.sg)
+* [Real World Haskell 中文版](http://cnhaskell.com)
+
+
+### HTML / CSS
+
+* [CSS3 Tutorial 《CSS3 教程》](https://github.com/waylau/css3-tutorial)
+* [CSS参考手册](http://css.doyoe.com)
+* [Emmet 文档](http://yanxyz.github.io/emmet-docs/)
+* [HTML5 教程](http://www.w3school.com.cn/html5/)
+* [HTML和CSS编码规范](http://codeguide.bootcss.com)
+* [Sass Guidelines 中文](http://sass-guidelin.es/zh/)
+* [前端代码规范](http://alloyteam.github.io/CodeGuide/) (腾讯 AlloyTeam 团队)
+* [学习CSS布局](http://zh.learnlayout.com)
+* [通用 CSS 笔记、建议与指导](https://github.com/chadluo/CSS-Guidelines/blob/master/README.md)
+
+
+### iOS
+
+* [Apple Watch开发初探](http://nilsun.github.io/apple-watch/)
+* [Google Objective-C Style Guide 中文版](http://zh-google-styleguide.readthedocs.org/en/latest/google-objc-styleguide/)
+* [iOS7人机界面指南](http://isux.tencent.com/ios-human-interface-guidelines-ui-design-basics-ios7.html)
+* [iOS开发60分钟入门](https://github.com/qinjx/30min_guides/blob/master/ios.md)
+* [iPhone 6 屏幕揭秘](http://wileam.com/iphone-6-screen-cn/)
+* [网易斯坦福大学公开课：iOS 7应用开发字幕文件](https://github.com/jkyin/Subtitle)
+
+
+### Java
+
+* [Activiti 5.x 用户指南](https://github.com/waylau/activiti-5.x-user-guide)
+* [Apache MINA 2 用户指南](https://github.com/waylau/apache-mina-2.x-user-guide)
+* [Apache Shiro 用户指南](https://github.com/waylau/apache-shiro-1.2.x-reference)
+* [Google Java编程风格指南](http://www.hawstein.com/posts/google-java-style.html)
+* [H2 Database 教程](https://github.com/waylau/h2-database-doc)
+* [Java Servlet 3.1 规范](https://github.com/waylau/servlet-3.1-specification)
+* [Java 编码规范](https://github.com/waylau/java-code-conventions)
+* [Java 编程思想](https://java.quanke.name) - quanke
+* [Jersey 2.x 用户指南](https://github.com/waylau/Jersey-2.x-User-Guide)
+* [JSSE 参考指南](https://github.com/waylau/jsse-reference-guide)
+* [MyBatis中文文档](http://mybatis.github.io/mybatis-3/zh/index.html)
+* [Netty 4.x 用户指南](https://github.com/waylau/netty-4-user-guide)
+* [Netty 实战(精髓)](https://github.com/waylau/essential-netty-in-action)
+* [Nutz-book Nutz烹调向导](http://nutzbook.wendal.net)
+* [Nutz文档](https://nutzam.com/core/nutz_preface.html)
+* [REST 实战](https://github.com/waylau/rest-in-action)
+* [Spring Boot参考指南](https://github.com/qibaoguang/Spring-Boot-Reference-Guide) (翻译中)
+* [Spring Framework 4.x参考文档](https://github.com/waylau/spring-framework-4-reference)
+* [用jersey构建REST服务](https://github.com/waylau/RestDemo)
+
+
+### Javascript
+
+* [Airbnb JavaScript 规范](https://github.com/adamlu/javascript-style-guide)
+* [ECMAScript 6 入门](http://es6.ruanyifeng.com) (作者：阮一峰)
+* [Google JavaScript 代码风格指南](http://bq69.com/blog/articles/script/868/google-javascript-style-guide.html)
+* [JavaScript Promise迷你书](http://liubin.github.io/promises-book/)
+* [Javascript 原理](https://web.archive.org/web/20170112164945/http://typeof.net/s/jsmech/)
+* [JavaScript 标准参考教程（alpha）](http://javascript.ruanyifeng.com)
+* [《JavaScript 模式》](https://github.com/jayli/javascript-patterns) “JavaScript patterns”中译本
+* [javascript 的 12 个怪癖](https://github.com/justjavac/12-javascript-quirks)
+* [JavaScript 秘密花园](http://bonsaiden.github.io/JavaScript-Garden/zh/)
+* [JavaScript核心概念及实践](http://icodeit.org/jsccp/) (PDF) (此书已由人民邮电出版社出版发行，但作者依然免费提供PDF版本，希望开发者们去购买，支持作者)
+* [Javascript编程指南](http://pij.robinqu.me) ([源码](https://github.com/RobinQu/Programing-In-Javascript))
+* [你不知道的Javascript](https://github.com/getify/You-Dont-Know-JS/tree/1ed-zh-CN) (深入JavaScript语言核心机制的系列图书)
+* [命名函数表达式探秘](http://justjavac.com/named-function-expressions-demystified.html)  (注:原文由[为之漫笔](http://www.cn-cuckoo.com) 翻译，原始地址无法打开，所以此处地址为我博客上的备份)
+* [学用 JavaScript 设计模式](http://www.oschina.net/translate/learning-javascript-design-patterns) (开源中国)
+* [深入理解JavaScript系列](http://www.cnblogs.com/TomXu/archive/2011/12/15/2288411.html)
+
+
+#### AngularJS
+
+  * [AngularJS入门教程](https://github.com/zensh/AngularjsTutorial_cn)
+  * [AngularJS最佳实践和风格指南](https://github.com/mgechev/angularjs-style-guide/blob/master/README-zh-cn.md)
+  * [在Windows环境下用Yeoman构建AngularJS项目](http://www.waylau.com/build-angularjs-app-with-yeoman-in-windows/)
+  * [构建自己的AngularJS](https://github.com/xufei/Make-Your-Own-AngularJS/blob/master/01.md)
+
+
+#### Backbone.js
+
+  * [Backbone.js中文文档](http://www.css88.com/doc/backbone/)
+  * [Backbone.js入门教程](http://www.the5fire.com/backbone-js-tutorials-pdf-download.html) (PDF)
+  * [Backbone.js入门教程第二版](https://github.com/the5fire/backbonejs-learning-note)
+
+
+#### D3.js
+
+  * [Learning D3.JS](http://d3.decembercafe.org) (作者：十二月咖啡馆)
+  * [官方API文档](https://github.com/mbostock/d3/wiki/API--%E4%B8%AD%E6%96%87%E6%89%8B%E5%86%8C)
+  * [张天旭的D3教程](http://blog.csdn.net/zhang__tianxu/article/category/1623437)
+  * [楚狂人的D3教程](http://www.cnblogs.com/winleisure/tag/D3.js/)
+
+
+#### ExtJS
+
+  * [Ext4.1.0 中文文档](http://extjs-doc-cn.github.io/ext4api/)
+
+
+#### impress.js
+
+  * [impress.js的中文教程](https://github.com/kokdemo/impress.js-tutorial-in-Chinese)
+
+
+#### jQuery
+
+  * [How to write jQuery plugin](http://i5ting.github.io/How-to-write-jQuery-plugin/build/jquery.plugin.html)
+  * [简单易懂的JQuery魔法](http://www.nowamagic.net/librarys/books/contents/jquery)
+
+
+#### Node.js
+
+  * [express.js 中文文档](http://expressjs.jser.us)
+  * [Express框架](http://javascript.ruanyifeng.com/nodejs/express.html)
+  * [koa 中文文档](https://github.com/guo-yu/koa-guide)
+  * [Learn You The Node.js For Much Win! (中文版)](https://www.npmjs.com/package/learnyounode-zh-cn)
+  * [Node debug 三法三例](http://i5ting.github.io/node-debug-tutorial/)
+  * [Node.js Fullstack《從零到一的進撃》](https://github.com/jollen/nodejs-fullstack-lessons)
+  * [Node.js 包教不包会](https://github.com/alsotang/node-lessons)
+  * [Nodejs Wiki Book](https://github.com/nodejs-tw/nodejs-wiki-book) (繁体中文)
+  * [nodejs中文文档](https://www.gitbook.com/book/0532/nodejs/details)
+  * [Node入门](http://www.nodebeginner.org/index-zh-cn.html)
+  * [The NodeJS 中文文档](https://www.gitbook.com/book/0532/nodejs/details) （社区翻译）
+  * [七天学会NodeJS](http://nqdeng.github.io/7-days-nodejs/) 阿里出品，很好的入门资料
+  * [使用 Express + MongoDB 搭建多人博客](https://github.com/nswbmw/N-blog)
+  * [JavaScript全栈工程师培训材料](http://nodejs.ctolib.com/docs/sfile/jstraining/engineering.html)
+
+
+#### React.js
+
+  * [Learn React & Webpack by building the Hacker News front page](https://github.com/theJian/build-a-hn-front-page)
+  * [React-Bits 中文文档](https://github.com/hateonion/react-bits-CN)
+  * [React Native 中文文档(含最新Android内容)](http://wiki.jikexueyuan.com/project/react-native/)
+  * [React webpack-cookbook](https://github.com/fakefish/react-webpack-cookbook)
+  * [React.js 中文文档](https://discountry.github.io/react/)
+  * [React.js 入门教程](http://fraserxu.me/intro-to-react/)
+
+
+#### Vue.js
+
+  * [Vue.js中文文档](https://cn.vuejs.org/v2/guide/)
+
+
+#### Zepto.js
+
+  * [Zepto.js 中文文档](http://css88.com/doc/zeptojs_api)
+
+
+### LaTeX
+
+* [LaTeX 笔记](http://www.dralpha.com/zh/tech/tech.htm)
+* [一份不太简短的 LaTeX2ε 介绍](http://ctan.org/pkg/lshort-zh-cn)
+* [大家來學 LaTeX](https://github.com/49951331/graduate-project-102pj/blob/master/docs/latex123.pdf) (PDF)
+
+
+### LISP
+
+* [ANSI Common Lisp 中文翻译版](http://acl.readthedocs.org/en/latest/)
+* [Common Lisp 高级编程技术](http://www.ituring.com.cn/minibook/862) (《On Lisp》中文版)
+
+
+### Lua
+
+* [Lua 5.3 参考手册](http://www.w3cschool.cc/manual/lua53doc/contents.html)
+
+
+### Markdown
+
+* [Markdown 快速入门](http://wowubuntu.com/markdown/basic.html)
+* [Markdown 简明教程](http://www.jianshu.com/p/7bd23251da0a)
+* [Markdown 语法说明](http://wowubuntu.com/markdown/)
+* [献给写作者的 Markdown 新手指南](http://www.jianshu.com/p/q81RER)
+
+
+### MySQL
+
+* [21分钟MySQL入门教程](http://www.cnblogs.com/mr-wid/archive/2013/05/09/3068229.html)
+* [MySQL索引背后的数据结构及算法原理](http://blog.codinglabs.org/articles/theory-of-mysql-index.html)
+
+
+### NoSQL
+
+* [Disque 使用教程](http://disque.huangz.me)
+* [Redis 命令参考](http://redisdoc.com)
+* [Redis 设计与实现](http://redisbook.com)
+* [The Little MongoDB Book](https://github.com/justinyhuang/the-little-mongodb-book-cn/blob/master/mongodb.md)
+* [The Little Redis Book](https://github.com/JasonLai256/the-little-redis-book/blob/master/cn/redis.md)
+* [带有详细注释的 Redis 2.6 代码](https://github.com/huangz1990/annotated_redis_source)
+* [带有详细注释的 Redis 3.0 代码](https://github.com/huangz1990/redis-3.0-annotated)
+
+
+### Perl
+
+* [Master Perl Today](https://github.com/fayland/chinese-perl-book)
+* [Perl 5 教程](https://web.archive.org/web/20150326073235/http://net.pku.edu.cn/~yhf/tutorial/perl/perl.html)
+* [Perl 教程](http://www.yiibai.com/perl)
+
+
+### PHP
+
+* [Composer中文文档](http://docs.phpcomposer.com)
+* [Laravel5.4中文文档](http://d.laravel-china.org/docs/5.4)
+* [Phalcon7中文文档](http://www.myleftstudio.com)
+* [PHP 之道](http://wulijun.github.io/php-the-right-way/)
+* [PHP中文手册](http://php.net/manual/zh/)
+* [PHP标准规范中文版](https://psr.phphub.org)
+* [Symfony2 实例教程](https://wusuopu.gitbooks.io/symfony2_tutorial/content)
+* [Yii2中文文档](http://www.yiichina.com/doc/guide/2.0)
+* [深入理解 PHP 内核](http://www.php-internals.com/book/)
+
+
+### PostgreSQL
+
+* [PostgreSQL 8.2.3 中文文档](http://works.jinbuguo.com/postgresql/menu823/index.html)
+* [PostgreSQL 9.3.1 中文文档](http://www.postgres.cn/docs/9.3/index.html)
+* [PostgreSQL 9.4.4 中文文档](http://www.postgres.cn/docs/9.4/index.html)
+* [PostgreSQL 9.5.3 中文文档](http://www.postgres.cn/docs/9.5/index.html)
+* [PostgreSQL 9.6.0 中文文档](http://www.postgres.cn/docs/9.6/index.html)
+
+
+### Python
+
+* [Django 1.11.6 中文文档](https://www.yiyibooks.cn/xx/Django_1.11.6/index.html)
+* [Django book 2.0](http://djangobook.py3k.cn/2.0/)
+* [Python 3 文档(简体中文) 3.2.2 documentation](http://docspy3zh.readthedocs.org/en/latest/)
+* [Python Cookbook第三版](http://python3-cookbook.readthedocs.io/zh_CN/latest/) (作者：David Beazley, Brian K.Jones 翻译：熊能)
+* [Python 中文学习大本营](http://www.pythondoc.com)
+* [Python之旅](http://funhacks.net/explore-python) (作者：Ethan)
+* [Python教程 - 廖雪峰的官方网站](http://www.liaoxuefeng.com/wiki/0014316089557264a6b348958f449949df42a6d3a2e542c000)
+* [像计算机科学家一样思考Python](https://www.ctolib.com/docs/sfile/think-python-2e/0.html) (中英对照版 作者：Allen B. Downey 翻译：大胖哥)
+* [深入 Python 3](https://github.com/jiechic/diveintopython3)
+* [笨办法学 Python](http://old.sebug.net/paper/books/LearnPythonTheHardWay/)
+* [简明 Python 教程](https://bop.molun.net) (作者：Swaroop C H 译者：沈洁元、漠伦)
+
+
+#### Django
+
+* [Django Girls 教程](https://tutorial.djangogirls.org/zh/) (1.11) (HTML)
+
+
+### R
+
+* [153分钟学会 R](http://cran.r-project.org/doc/contrib/Liu-FAQ.pdf) (PDF)
+* [R 导论](http://cran.r-project.org/doc/contrib/Ding-R-intro_cn.pdf) (《An Introduction to R》中文版) (PDF)
+* [用 R 构建 Shiny 应用程序](http://yanping.me/shiny-tutorial/) (《Building 'Shiny' Applications with R》中文版)
+* [统计学与 R 读书笔记](http://cran.r-project.org/doc/contrib/Xu-Statistics_and_R.pdf) (PDF)
+
+
+### reStructuredText
+
+* [reStructuredText 入门](http://www.pythondoc.com/sphinx/rest.html)
+
+
+### Ruby
+
+* [Rails 风格指南](https://github.com/JuanitoFatas/rails-style-guide/blob/master/README-zhCN.md)
+* [Ruby on Rails 实战圣经](https://ihower.tw/rails4/)
+* [Ruby on Rails 指南](http://guides.ruby-china.org)
+* [Ruby 风格指南](https://github.com/JuanitoFatas/ruby-style-guide/blob/master/README-zhCN.md)
+* [Sinatra](http://www.sinatrarb.com/intro-zh.html)
+* [笨方法学 Ruby](http://lrthw.github.io)
+
+
+### Rust
+
+* [Rust 官方教程](https://github.com/KaiserY/rust-book-chinese)
+* [Rust 语言学习笔记](https://github.com/photino/rust-notes)
+* [RustPrimer](https://github.com/rustcc/RustPrimer)
+* [通过例子学习 Rust](https://github.com/rustcc/rust-by-example/)
+
+
+### Scala
+
+* [Effective Scala](http://twitter.github.io/effectivescala/index-cn.html)
+* [Scala 初学者指南](https://www.gitbook.com/book/windor/beginners-guide-to-scala/details) (The Neophyte's Guide to Scala)
+* [Scala 课堂](http://twitter.github.io/scala_school/zh_cn/index.html) (Twitter的Scala中文教程)
+
+
+### Scheme
+
+* [Scheme 入门教程](http://deathking.github.io/yast-cn/) (《Yet Another Scheme Tutorial》中文版)
+
+
+### Scratch
+
+* [创意计算课程指南](http://cccgchinese.strikingly.com)
+
+
+### Shell
+
+* [shell-book](http://me.52fhy.com/shell-book/)
+* [Shell 编程基础](http://wiki.ubuntu.org.cn/Shell%E7%BC%96%E7%A8%8B%E5%9F%BA%E7%A1%80)
+* [Shell 编程范例](https://tinylab.gitbooks.io/shellbook/content) - 泰晓科技
+* [Shell 脚本编程30分钟入门](https://github.com/qinjx/30min_guides/blob/master/shell.md)
+* [The Linux Command Line 中文版](http://billie66.github.io/TLCL/book/)
+
+
+### Swift
+
+* [《The Swift Programming Language》中文版](https://www.gitbook.com/book/numbbbbb/-the-swift-programming-language-/details)
+
+
+### TypeScript
+
+* [TypeScript Deep Dive 中文版](https://github.com/jkchao/typescript-book-chinese)
+* [TypeScript 中文网](https://www.tslang.cn)
+* [TypeScript 入门教程](https://www.runoob.com/w3cnote/getting-started-with-typescript.html)
+
+
+### VBA (Microsoft Visual Basic Applications)
+
+* [简明Excel VBA](https://github.com/Youchien/concise-excel-vba)
+
+
+### Vim
+
+* [Vim Manual(中文版)](http://man.chinaunix.net/newsoft/vi/doc/help.html)
+* [大家來學 VIM](http://www.study-area.org/tips/vim/index.html)
+
+
+### Visual Prolog
+
+* [Visual Prolog 7初学指南](http://wiki.visual-prolog.com/index.php?title=A_Beginners_Guide_to_Visual_Prolog_in_Chinese)
+* [Visual Prolog 7边练边学](http://wiki.visual-prolog.com/index.php?title=Visual_Prolog_for_Tyros_in_Chinese)
+
+
+### WebAssembly
+
+* [C/C++面向WebAssembly编程](https://github.com/3dgen/cppwasm-book)
